@@ -1,99 +1,52 @@
 import random
-random.seed(10)
 import matplotlib.pyplot as plt
 import numpy as np
 import simpy
 
-def simular_proceso1(env, ram, cpu):
-    instr=20
-    mer= 10
-    resur= 1
-    while (instr > 0):
-        with ram.get(mer) as get:
-            with cpu.request() as req:
-                yield req 
-                while instr > 0:
-                    resur= resur - 1
-                    yield env.timeout(1)
-                yield env.timeout(
-                    np.random.randint(5, 20))
-            
-    tiempo_ejecucion = random.expovariate(1/velocidad_procesador)
+# Definir parámetros iniciales
+memoria = 100
+num_proc = 1
+numero_procesos = [25, 50, 100, 150, 200]
+
+# Función para simular un proceso
+def simular_proceso(tiempo_llegada, memoria, num_proc):
+    tiempo_ejecucion = random.expovariate(1)  # Simulación del tiempo de ejecución del proceso
     tiempo_espera = max(0, tiempo_llegada - memoria)
     tiempo_total = tiempo_espera + tiempo_ejecucion
     return tiempo_total
-tiempos_promedio = []
-desviaciones_estandar = []
-numero_procesos = [25, 50, 100, 150, 200]
 
-memoria= 100
-num_proc= 1
-intervalo = 5
+# Función para simular procesos con diferentes intervalos de llegada
+def simular_procesos(env, ram, cpu, intervalo):
+    tiempos_promedio = []
+    desviaciones_estandar = []
 
-def simular_proceso(env, ram, cpu):
-    for i in range(5):
-        env.process(simular_proceso1(env, ram, cpu))
-        yield env.timeout(random.expovariate(1/intervalo))
-                                    
-env=simpy.Environment()
-ram=simpy.Container(env, init=memoria,capacity=memoria)
+    for num_procesos in numero_procesos:
+        tiempos = []
+        for i in range(num_procesos):
+            tiempo_llegada = random.uniform(0, intervalo)
+            tiempo_total = simular_proceso(tiempo_llegada, memoria, num_proc)
+            tiempos.append(tiempo_total)
+
+        tiempos_promedio.append(np.mean(tiempos))
+        desviaciones_estandar.append(np.std(tiempos))
+
+    return tiempos_promedio, desviaciones_estandar
+
+# Crear entorno de simulación
+env = simpy.Environment()
+ram = simpy.Container(env, init=memoria, capacity=memoria)
 cpu = simpy.Resource(env, capacity=num_proc)
-env.process(simular_proceso(env, ram, cpu))
-env.run()
 
+# Simular procesos con diferentes intervalos de llegada
+tiempos_promedio_10, desviaciones_estandar_10 = simular_procesos(env, ram, cpu, 10)
+tiempos_promedio_5, desviaciones_estandar_5 = simular_procesos(env, ram, cpu, 5)
+tiempos_promedio_1, desviaciones_estandar_1 = simular_procesos(env, ram, cpu, 1)
 
-#Parte Correcta
-for num_procesos in numero_procesos:
-  tiempos = []
-  for i in range(num_procesos):
-    tiempo_llegada = random.uniform(0, 100)
-    tiempo_total = simular_proceso(tiempo_llegada, 100, 1)
-    tiempos.append(tiempo_total)
-
-  tiempos_promedio.append(np.mean(tiempos))
-  desviaciones_estandar.append(np.std(tiempos))
-
-# Gráfica
-plt.plot(numero_procesos, tiempos_promedio, label="Intervalo de 10")
-plt.xlabel("Número de procesos")
-plt.ylabel("Tiempo promedio (unidades de tiempo)")
-plt.legend()
-tiempos_promedio_5 = []
-desviaciones_estandar_5 = []
-
-for num_procesos in numero_procesos:
-  tiempos = []
-  for i in range(num_procesos):
-    tiempo_llegada = random.uniform(0, 5)
-    tiempo_total = simular_proceso(tiempo_llegada, 100, 1)
-    tiempos.append(tiempo_total)
-
-  tiempos_promedio_5.append(np.mean(tiempos))
-  desviaciones_estandar_5.append(np.std(tiempos))
-
-# Gráfica
+# Graficar los resultados
+plt.plot(numero_procesos, tiempos_promedio_10, label="Intervalo de 10")
 plt.plot(numero_procesos, tiempos_promedio_5, label="Intervalo de 5")
-plt.xlabel("Número de procesos")
-plt.ylabel("Tiempo promedio (unidades de tiempo)")
-plt.legend()
-tiempos_promedio_1 = []
-desviaciones_estandar_1 = []
-
-for num_procesos in numero_procesos:
-  tiempos = []
-  for i in range(num_procesos):
-    tiempo_llegada = random.uniform(0, 1)
-    tiempo_total = simular_proceso(tiempo_llegada, 100, 1)
-    tiempos.append(tiempo_total)
-
-  tiempos_promedio_1.append(np.mean(tiempos))
-  desviaciones_estandar_1.append(np.std(tiempos))
-
-# Gráfica
 plt.plot(numero_procesos, tiempos_promedio_1, label="Intervalo de 1")
 plt.xlabel("Número de procesos")
 plt.ylabel("Tiempo promedio (unidades de tiempo)")
-print (desviaciones_estandar) 
 plt.legend()
 plt.show()
-
